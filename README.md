@@ -17,6 +17,7 @@
 
 ```
 ├── try.py                      # 主程式，圖形化 JSON 編輯器
+├── set.bat                     # 一鍵設定程式執行環境
 ├── export_output/              # 其他資料
     └── data.json               # 網站主資料（需自行準備）
     └── translation_cache.json  # 翻譯快取（自動產生）
