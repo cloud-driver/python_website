@@ -17,9 +17,10 @@
 
 ```
 ├── try.py                      # 主程式，圖形化 JSON 編輯器
-├── data.json                   # 網站主資料（需自行準備）
-├── translation_cache.json      # 翻譯快取（自動產生）
-├── files/                      # 圖片與檔案會儲存在此資料夾中
+├── export_output/              # 其他資料
+    └── data.json               # 網站主資料（需自行準備）
+    └── translation_cache.json  # 翻譯快取（自動產生）
+    └── files/                  # 圖片與檔案會儲存在此資料夾中
 ```
 
 ## 🚀 使用方式
