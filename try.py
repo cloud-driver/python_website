@@ -60,39 +60,6 @@ class JSONEditorApp:
         else:
             self.translation_cache = {}
 
-    def save_translation_cache(self):
-        """儲存快取檔到 data.json 所在資料夾"""
-        cache_path = os.path.join(self.base_dir, "translation_cache.json")
-        try:
-            with open(cache_path, "w", encoding="utf-8") as f:
-                json.dump(self.translation_cache, f, ensure_ascii=False, indent=4)
-        except Exception as e:
-            print(f"快取儲存失敗: {e}")
-
-    def update_combobox_values(self, new_values):
-        self.section_combobox["values"] = new_values
-
-    def translate_sections(self, sections):
-        """非同步翻譯每個 section，並使用快取"""
-        if not hasattr(self, 'translation_cache'):
-            self.translation_cache = {}
-        new_values = []
-        updated = False
-        for sec in sections:
-            if sec in self.translation_cache:
-                translation = self.translation_cache[sec]
-            else:
-                try:
-                    translation = translator.translate(sec)
-                except Exception as e:
-                    translation = "翻譯錯誤"
-                self.translation_cache[sec] = translation
-                updated = True
-            new_values.append(f"{sec} ({translation})")
-        self.root.after(0, self.update_combobox_values, new_values)
-        if updated:
-            self.save_translation_cache()
-
     def build_ui(self):
         """建立UI介面"""
         self.root.grid_columnconfigure(0, weight=1)
@@ -492,6 +459,7 @@ class JSONEditorApp:
 if __name__ == "__main__":
     root = tk.Tk()
     root.geometry("650x800")
+    root.iconbitmap('logo.ico') 
     app = JSONEditorApp(root)
-    app.start()
+    app.start() 
     root.mainloop()
