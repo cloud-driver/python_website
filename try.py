@@ -6,6 +6,8 @@ import os
 import shutil
 import uuid
 from deep_translator import GoogleTranslator
+import re
+from html import unescape
 
 translator = GoogleTranslator(source='auto', target='zh-TW')
 
@@ -26,6 +28,7 @@ class JSONEditorApp:
         self.content_text = None
         self.date_entry = None
         self.tags_entry = None
+        self.current_videos = []
 
     def start(self):
         """讓使用者開啟有data.json的資料夾"""
@@ -248,6 +251,7 @@ class JSONEditorApp:
         self.content_text = None
         self.date_entry = None
         self.tags_entry = None
+        self.current_videos = []
 
     def populate_form(self):
         """根據 selected_item_index 取得該項目的標題、內文、日期、標籤、圖片列表（縮圖顯示）、附加檔案（文字列出）並建立對應的輸入元件與按鈕（如上傳、刪除）"""
@@ -270,7 +274,18 @@ class JSONEditorApp:
         ttk.Label(self.form_frame, text="內文:").grid(row=1, column=0, sticky=tk.W)
         self.content_text = tk.Text(self.form_frame, height=5)
         self.content_text.grid(row=1, column=1, sticky="ew")
-        self.content_text.insert("1.0", item.get("content", ""))
+        # 這裡先統一設定紅字樣式
+        self.content_text.tag_config("red", foreground="red")
+        self.insert_content_with_red(item.get("content", ""))
+
+        self.text_menu = tk.Menu(self.root, tearoff=0)
+        self.text_menu.add_command(label="剪下", command=lambda: self.content_text.event_generate("<<Cut>>"))
+        self.text_menu.add_command(label="複製", command=lambda: self.content_text.event_generate("<<Copy>>"))
+        self.text_menu.add_command(label="貼上", command=lambda: self.content_text.event_generate("<<Paste>>"))
+        self.text_menu.add_separator()
+        self.text_menu.add_command(label="改成紅字", command=self.make_red_text)
+
+        self.content_text.bind("<Button-3>", self.show_text_menu)
 
         ttk.Label(self.form_frame, text="日期:").grid(row=2, column=0, sticky=tk.W)
         self.date_entry = ttk.Entry(self.form_frame)
@@ -284,8 +299,12 @@ class JSONEditorApp:
         tags_value = ", ".join(item.get("tags", [])) if item.get("tags") else ""
         self.tags_entry.insert(0, tags_value)
 
-        ttk.Button(self.form_frame, text="新增圖片", command=self.upload_image).grid(row=4, column=1, sticky=tk.W, pady=5)
-        ttk.Button(self.form_frame, text="新增檔案", command=self.upload_file).grid(row=5, column=1, sticky=tk.W, pady=5)
+        btn_frame = ttk.Frame(self.form_frame)
+        btn_frame.grid(row=4, column=1, sticky="w", pady=5)
+
+        ttk.Button(btn_frame, text="新增圖片", command=self.upload_image).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="新增檔案", command=self.upload_file).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="新增影片", command=self.upload_video).pack(side=tk.LEFT, padx=5)
 
         row = 6
         for img in self.current_images:
@@ -313,12 +332,37 @@ class JSONEditorApp:
             except Exception as e:
                 print(f"檔案顯示失敗: {e}")
 
+        for video in item.get("videos", []):
+            self.current_videos.append(video)
+            ttk.Label(self.form_frame, text=f"影片: {os.path.basename(video)}").grid(row=row, column=1, sticky=tk.W)
+            ttk.Button(self.form_frame, text="🗑", command=lambda v=video: self.remove_video(v)).grid(row=row, column=2)
+            row += 1
+
+    def show_text_menu(self, event):
+        """在滑鼠右鍵點擊文字框時顯示自訂選單"""
+        try:
+            self.text_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            self.text_menu.grab_release()
+
+    def make_red_text(self):
+        """將選取文字設為紅色（用 tag）"""
+        try:
+            start = self.content_text.index("sel.first")
+            end = self.content_text.index("sel.last")
+            self.content_text.tag_add("red", start, end)
+            self.content_text.tag_config("red", foreground="red")
+        except tk.TclError:
+            messagebox.showwarning("提醒", "請先選取一段文字才能變色。")
+
+
+
     def add_item(self):
         """在目前 section 的陣列尾端加上一個預設的新項目，並自動選取它進入編輯"""
         if not self.current_section:
             return
         items = self.get_section_items(self.current_section)
-        items.append({"title": "新項目", "content": "", "images": [], "files": [], "date": "", "tags": []})
+        items.append({"title": "新項目", "content": "", "images": [], "files": [], "videos": [], "date": "", "tags": []})
         self.set_section_items(self.current_section, items)
         self.populate_items()
         self.item_listbox.selection_set(tk.END)
@@ -374,6 +418,26 @@ class JSONEditorApp:
             except Exception as e:
                 messagebox.showerror("錯誤", f"上傳檔案失敗: {e}")
 
+    def upload_video(self):
+        """讓使用者選擇影片，複製到 files/ 資料夾中，並將相對路徑加到 videos 欄位中"""
+        path = filedialog.askopenfilename(filetypes=[("Video Files", "*.mp4;*.mov;*.avi;*.mkv")])
+        if path and self.selected_item_index is not None:
+            try:
+                ext = os.path.splitext(path)[1]
+                new_name = f"{uuid.uuid4().hex}{ext}"
+                dest_dir = os.path.join(self.base_dir, "files")
+                os.makedirs(dest_dir, exist_ok=True)
+                dest = os.path.join(dest_dir, new_name)
+                shutil.copy(path, dest)
+                rel_path = os.path.relpath(dest, self.base_dir)
+                self.current_videos.append(rel_path)
+                items = self.get_section_items(self.current_section)
+                items[self.selected_item_index]["videos"] = self.current_videos.copy()
+                self.set_section_items(self.current_section, items)
+                self.populate_form()
+            except Exception as e:
+                messagebox.showerror("錯誤", f"上傳影片失敗: {e}")
+
     def remove_image(self, path):
         """移除指定的圖片（包含實體檔案 + JSON 路徑），並重新更新畫面"""
         try:
@@ -404,6 +468,74 @@ class JSONEditorApp:
         except Exception as e:
             messagebox.showerror("錯誤", f"移除檔案失敗: {e}")
 
+    def remove_video(self, path):
+        """移除指定的影片（包含實體檔案 + JSON 路徑），並重新更新畫面"""
+        try:
+            full_path = os.path.join(self.base_dir, path)
+            if os.path.exists(full_path):
+                os.remove(full_path)
+            if path in self.current_videos:
+                self.current_videos.remove(path)
+            items = self.get_section_items(self.current_section)
+            items[self.selected_item_index]["videos"] = self.current_videos.copy()
+            self.set_section_items(self.current_section, items)
+            self.populate_form()
+        except Exception as e:
+            messagebox.showerror("錯誤", f"移除影片失敗: {e}")
+
+    def export_text_with_red(self, text_widget):
+        """將 Text widget 內容轉為 HTML，將紅字區段以 <span style='color:red'> ... </span> 包住"""
+        full_text = text_widget.get("1.0", "end-1c")
+        # 取得紅字區間，tag_ranges("red") 會回傳一個 index 的 tuple
+        red_ranges = []
+        ranges = text_widget.tag_ranges("red")
+        for i in range(0, len(ranges), 2):
+            # 以 "1.0" 為起點，計算到該 index 的文字數（返回 tuple, 取第一個值）
+            start_offset = text_widget.count("1.0", ranges[i])[0]
+            end_offset = text_widget.count("1.0", ranges[i+1])[0]
+            red_ranges.append((start_offset, end_offset))
+        # 根據 red_ranges 重建文字（以 HTML 格式標記紅字）
+        result = ""
+        last_idx = 0
+        for start, end in red_ranges:
+            # 插入非紅字部分
+            result += full_text[last_idx:start]
+            # 插入紅字部分包入 span
+            result += "<span style='color:red'>" + full_text[start:end] + "</span>"
+            last_idx = end
+        result += full_text[last_idx:]
+        return result.replace("\n", "<br>")
+
+
+    def insert_content_with_red(self, html):
+        """將 HTML 中的 <span style='color:red'> 文字轉成文字並加上紅色 tag"""
+        self.content_text.delete("1.0", tk.END)
+        # 提前設定 tag，必須在每次操作前設定一次
+        self.content_text.tag_config("red", foreground="red")
+        
+        # 處理換行
+        html = html.replace("<br>", "\n")
+        # 允許冒號後有空格，例如 "color: red"
+        pattern = re.compile(r"<span style=['\"]color\s*:\s*red['\"]>(.*?)</span>", re.IGNORECASE)
+        pos = 0
+        while True:
+            match = pattern.search(html, pos)
+            if not match:
+                break
+            before = html[pos:match.start()]
+            red_text = unescape(match.group(1))
+            # 插入非紅字部分
+            self.content_text.insert(tk.END, unescape(before))
+            # 取得紅字部分插入前的正確位置
+            red_start_index = self.content_text.index("end-1c")
+            self.content_text.insert(tk.END, red_text)
+            red_end_index = self.content_text.index("end-1c")
+            self.content_text.tag_add("red", red_start_index, red_end_index)
+            pos = match.end()
+        # 插入剩餘文字
+        self.content_text.insert(tk.END, unescape(html[pos:]))
+        self.content_text.update_idletasks()  # 強制刷新 widget
+
     def save_json(self):
         """把目前表單內的資料（文字欄位、圖片與檔案列表）寫入 data.json 中對應的項目，並整個重新存檔至硬碟"""
         if self.selected_item_index is not None and self.current_section:
@@ -413,7 +545,7 @@ class JSONEditorApp:
                 if self.title_entry:
                     item["title"] = self.title_entry.get().strip()
                 if self.content_text:
-                    item["content"] = self.content_text.get("1.0", tk.END).strip()
+                    item["content"] = self.export_text_with_red(self.content_text).strip()
                 if self.date_entry:
                     item["date"] = self.date_entry.get().strip() or None  # 空字串轉為 None
                 if self.tags_entry:
@@ -421,6 +553,7 @@ class JSONEditorApp:
                     item["tags"] = tags
                 item["images"] = self.current_images.copy()
                 item["files"] = self.current_files.copy()
+                item["videos"] = self.current_videos.copy()
                 self.set_section_items(self.current_section, items)
                 self.populate_items()
 
