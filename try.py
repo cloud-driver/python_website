@@ -355,8 +355,6 @@ class JSONEditorApp:
         except tk.TclError:
             messagebox.showwarning("提醒", "請先選取一段文字才能變色。")
 
-
-
     def add_item(self):
         """在目前 section 的陣列尾端加上一個預設的新項目，並自動選取它進入編輯"""
         if not self.current_section:
@@ -505,7 +503,6 @@ class JSONEditorApp:
             last_idx = end
         result += full_text[last_idx:]
         return result.replace("\n", "<br>")
-
 
     def insert_content_with_red(self, html):
         """將 HTML 中的 <span style='color:red'> 文字轉成文字並加上紅色 tag"""
