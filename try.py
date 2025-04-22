@@ -282,6 +282,7 @@ class JSONEditorApp:
         self.text_menu.add_command(label="剪下", command=lambda: self.content_text.event_generate("<<Cut>>"))
         self.text_menu.add_command(label="複製", command=lambda: self.content_text.event_generate("<<Copy>>"))
         self.text_menu.add_command(label="貼上", command=lambda: self.content_text.event_generate("<<Paste>>"))
+        self.text_menu.add_command(label="選取全部", command=self.select_all_text)
         self.text_menu.add_separator()
         self.text_menu.add_command(label="改成紅字", command=self.make_red_text)
 
@@ -337,6 +338,9 @@ class JSONEditorApp:
             ttk.Label(self.form_frame, text=f"影片: {os.path.basename(video)}").grid(row=row, column=1, sticky=tk.W)
             ttk.Button(self.form_frame, text="🗑", command=lambda v=video: self.remove_video(v)).grid(row=row, column=2)
             row += 1
+
+    def select_all_text(self):
+        self.content_text.tag_add("sel", "1.0", "end")
 
     def show_text_menu(self, event):
         """在滑鼠右鍵點擊文字框時顯示自訂選單"""
