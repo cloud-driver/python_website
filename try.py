@@ -305,7 +305,7 @@ class JSONEditorApp:
 
         ttk.Button(btn_frame, text="新增圖片", command=self.upload_image).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="新增檔案", command=self.upload_file).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="新增影片", command=self.upload_video).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="新增影片連結", command=self.add_video_link_row).pack(side=tk.LEFT, padx=5)
 
         row = 6
         for img in self.current_images:
@@ -333,10 +333,13 @@ class JSONEditorApp:
             except Exception as e:
                 print(f"檔案顯示失敗: {e}")
 
+        self.current_videos = []
         for video in item.get("videos", []):
-            self.current_videos.append(video)
-            ttk.Label(self.form_frame, text=f"影片: {os.path.basename(video)}").grid(row=row, column=1, sticky=tk.W)
-            ttk.Button(self.form_frame, text="🗑", command=lambda v=video: self.remove_video(v)).grid(row=row, column=2)
+            video_var = tk.StringVar(value=video)
+            entry = ttk.Entry(self.form_frame, textvariable=video_var, width=50)
+            entry.grid(row=row, column=1, sticky="w", pady=2)
+            ttk.Button(self.form_frame, text="🗑", command=lambda e=entry, v=video_var: self.remove_video_entry(e, v)).grid(row=row, column=2)
+            self.current_videos.append(video_var)
             row += 1
 
     def select_all_text(self):
@@ -420,25 +423,16 @@ class JSONEditorApp:
             except Exception as e:
                 messagebox.showerror("錯誤", f"上傳檔案失敗: {e}")
 
-    def upload_video(self):
-        """讓使用者選擇影片，複製到 files/ 資料夾中，並將相對路徑加到 videos 欄位中"""
-        path = filedialog.askopenfilename(filetypes=[("Video Files", "*.mp4;*.mov;*.avi;*.mkv")])
-        if path and self.selected_item_index is not None:
-            try:
-                ext = os.path.splitext(path)[1]
-                new_name = f"{uuid.uuid4().hex}{ext}"
-                dest_dir = os.path.join(self.base_dir, "files")
-                os.makedirs(dest_dir, exist_ok=True)
-                dest = os.path.join(dest_dir, new_name)
-                shutil.copy(path, dest)
-                rel_path = os.path.relpath(dest, self.base_dir)
-                self.current_videos.append(rel_path)
-                items = self.get_section_items(self.current_section)
-                items[self.selected_item_index]["videos"] = self.current_videos.copy()
-                self.set_section_items(self.current_section, items)
-                self.populate_form()
-            except Exception as e:
-                messagebox.showerror("錯誤", f"上傳影片失敗: {e}")
+    def add_video_link_row(self):
+        """新增一列可輸入 YouTube 連結"""
+        row = len(self.current_videos) + 100  # 避免跟圖片或其他元件衝突
+        video_var = tk.StringVar()
+        entry = ttk.Entry(self.form_frame, textvariable=video_var, width=50)
+        entry.grid(row=row, column=1, sticky="w", pady=2)
+        ttk.Button(self.form_frame, text="🗑", command=lambda: self.remove_video_entry(entry, video_var)).grid(row=row, column=2)
+
+        self.current_videos.append(video_var)
+
 
     def remove_image(self, path):
         """移除指定的圖片（包含實體檔案 + JSON 路徑），並重新更新畫面"""
@@ -470,20 +464,10 @@ class JSONEditorApp:
         except Exception as e:
             messagebox.showerror("錯誤", f"移除檔案失敗: {e}")
 
-    def remove_video(self, path):
-        """移除指定的影片（包含實體檔案 + JSON 路徑），並重新更新畫面"""
-        try:
-            full_path = os.path.join(self.base_dir, path)
-            if os.path.exists(full_path):
-                os.remove(full_path)
-            if path in self.current_videos:
-                self.current_videos.remove(path)
-            items = self.get_section_items(self.current_section)
-            items[self.selected_item_index]["videos"] = self.current_videos.copy()
-            self.set_section_items(self.current_section, items)
-            self.populate_form()
-        except Exception as e:
-            messagebox.showerror("錯誤", f"移除影片失敗: {e}")
+    def remove_video_entry(self, entry, var):
+        """移除影片輸入列"""
+        entry.destroy()
+        self.current_videos.remove(var)
 
     def export_text_with_red(self, text_widget):
         """將 Text widget 內容轉為 HTML，將紅字區段以 <span style='color:red'> ... </span> 包住"""
@@ -554,7 +538,7 @@ class JSONEditorApp:
                     item["tags"] = tags
                 item["images"] = self.current_images.copy()
                 item["files"] = self.current_files.copy()
-                item["videos"] = self.current_videos.copy()
+                item["videos"] = [v.get().strip() for v in self.current_videos if v.get().strip()]
                 self.set_section_items(self.current_section, items)
                 self.populate_items()
 

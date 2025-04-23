@@ -135,24 +135,31 @@
             {
                 "title": "2024年資訊科學營",
                 "subtitle": "",
-                "content": "資訊科學相關活動\n媽媽爸爸都有來",
+                "content": "資訊科學相關活動<br><span style='color:red'>媽媽爸爸都有來</span>",
                 "images": [],
                 "files": [],
                 "date": "2024-07-01",
                 "tags": [
                     "活動",
                     "資訊"
-                ]
+                ],
+                "videos": []
             },
             {
                 "title": "課程報告",
                 "subtitle": "123",
                 "content": "12312",
-                "images": [],
+                "images": [
+                    "files\\dba7134ecfb74414b31d05936d8796ae.jpg",
+                    "files\\59efa2ad1d8e4e0b94c6de2f688c2d0e.png"
+                ],
                 "files": [],
                 "date": "2024-01-10",
                 "tags": [
                     "課程"
+                ],
+                "videos": [
+                    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
                 ]
             }
         ]
@@ -172,7 +179,17 @@
             }
         ],
         "projects": [],
-        "trainings": []
+        "trainings": [
+            {
+                "title": "我是第一個培訓項目",
+                "content": "呵呵<br>嘻嘻<br>他的<br>她的<br>ㄏㄏ",
+                "images": [],
+                "files": [],
+                "videos": [],
+                "date": null,
+                "tags": []
+            }
+        ]
     },
     "achievements": {
         "competitions": [],
