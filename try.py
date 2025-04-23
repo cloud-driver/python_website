@@ -477,8 +477,12 @@ class JSONEditorApp:
         ranges = text_widget.tag_ranges("red")
         for i in range(0, len(ranges), 2):
             # 以 "1.0" 為起點，計算到該 index 的文字數（返回 tuple, 取第一個值）
-            start_offset = text_widget.count("1.0", ranges[i])[0]
-            end_offset = text_widget.count("1.0", ranges[i+1])[0]
+            start_count = text_widget.count("1.0", ranges[i])
+            end_count = text_widget.count("1.0", ranges[i+1])
+            if not start_count or not end_count:
+                continue
+            start_offset = start_count[0]
+            end_offset = end_count[0]
             red_ranges.append((start_offset, end_offset))
         # 根據 red_ranges 重建文字（以 HTML 格式標記紅字）
         result = ""
