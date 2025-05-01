@@ -5,7 +5,9 @@
                 "title": "簡介",
                 "subtitle": "",
                 "content": "本班創立以來一直以「科學、資訊、人文」為課程規劃之核心，開設「數位學習實驗班」培育具備科技人文的未來產業人才，透過實作、專題等課程，培養學生靈活思考，重視學習目標的能力，帶領學生成為『自主學習、同理有愛、接軌世界』的未來公民，透過實驗班課程規劃，將程式科技、語文表達、國際視野、專題<span style='color:red'>研究與製作等領域連</span>結整合，以期培養基礎能力與建構健全品格與學習態度，並融入資訊科技等實務精神，並與大學端合作，<span style='color:red'>培育符應二十一世紀的科技人才</span>。<br>",
-                "images": [],
+                "images": [
+                    "files\\cbc1c330cf424e71874e1caf454c0b25.png"
+                ],
                 "files": [],
                 "date": "2025-04-03",
                 "tags": [
@@ -231,10 +233,23 @@
                 "tags": [
                     "Q&A",
                     "faq"
-                ]
+                ],
+                "videos": []
             }
         ],
-        "downloads": [],
+        "downloads": [
+            {
+                "title": "我是要下載的東西",
+                "content": "",
+                "images": [
+                    "files\\f6ab8b95d22641c0a8503eff5e17b5e0.png"
+                ],
+                "files": [],
+                "videos": [],
+                "date": null,
+                "tags": []
+            }
+        ],
         "transport": []
     }
 }
