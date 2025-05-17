@@ -45,6 +45,7 @@
 - 程式會將每一層 key 對應的完整路徑送至 Google 翻譯。
 - 翻譯結果會儲存到 `translation_cache.json`。
 - 每個下拉選單項目會顯示為：`英文key (中文翻譯)`。
+- 開啟程式時會先尋找有無`translation_cache.json`，若有則直取用裡面的翻譯資訊
 
 ## 👨‍💻 作者
 
