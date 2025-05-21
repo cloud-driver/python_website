@@ -384,16 +384,16 @@ class JSONEditorApp:
                 self.clear_form()
 
     def upload_image(self):
-        """讓使用者選擇圖片，複製到 files/ 資料夾中，並將相對路徑加到 images 欄位中"""
+        """讓使用者選擇圖片，自動轉為 WebP 格式（含壓縮），儲存到 files/ 資料夾，並加到 images 欄位中"""
         path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.gif")])
         if path and self.selected_item_index is not None:
             try:
-                ext = os.path.splitext(path)[1]
-                new_name = f"{uuid.uuid4().hex}{ext}"
+                img = Image.open(path).convert("RGB")
+                new_name = f"{uuid.uuid4().hex}.webp"
                 dest_dir = os.path.join(self.base_dir, "files")
                 os.makedirs(dest_dir, exist_ok=True)
                 dest = os.path.join(dest_dir, new_name)
-                shutil.copy(path, dest)
+                img.save(dest, "webp", quality=85, method=6)
                 rel_path = os.path.relpath(dest, self.base_dir)
                 self.current_images.append(rel_path)
                 items = self.get_section_items(self.current_section)
